@@ -35,6 +35,7 @@ module Debugger
 
     def print(*args)
       @socket.printf(*args)
+      @socket.puts
     end
     
     def close

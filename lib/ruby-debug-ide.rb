@@ -13,6 +13,7 @@ else
   require_relative 'ruby-debug/xml_printer'
   require_relative 'ruby-debug/ide_processor'
   require_relative 'ruby-debug/event_processor'
+  require_relative 'ruby-debug/engine'
 end
 
 module Debugger
@@ -132,9 +133,7 @@ module Debugger
           # 127.0.0.1 seemingly works with all systems and with IPv6 as well.
           # "localhost" and nil have problems on some systems.
           host ||= '127.0.0.1'
-          $stderr.printf "Fast Debugger (ruby-debug-ide #{IDE_VERSION}, ruby-debug-base #{VERSION}) listens on #{host}:#{port}\n"
-          server = TCPServer.new(host, port)
-          while (session = server.accept)
+          while (session = get_socket(host, port))
             begin
               interface = RemoteInterface.new(session)
               @event_processor = EventProcessor.new(interface)
@@ -151,6 +150,26 @@ module Debugger
           exit 2
         end
       end
+    end
+
+    def get_socket(host, port)
+      connect_to_debug_proxy(host, port) || listen_for_connection(host, port)
+    end
+
+    def connect_to_debug_proxy(host, port)
+      $stderr.printf "Fast Debugger (ruby-debug-ide #{IDE_VERSION}, ruby-debug-base #{VERSION}) trying to connect to proxy on #{host}:#{port}\n"
+      socket = TCPSocket.new(host, port)
+      socket.puts("register debugger")
+      $stderr.printf "Connected\n"
+      socket
+    end
+
+    def listen_for_connection(host, port)
+      unless @tcp_server
+        $stderr.printf "Fast Debugger (ruby-debug-ide #{IDE_VERSION}, ruby-debug-base #{VERSION}) listens on #{host}:#{port}\n"
+        @tcp_server = TCPServer.new(host, port)
+      end
+      @tcp_server.accept
     end
     
   end

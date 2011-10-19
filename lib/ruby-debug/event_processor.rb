@@ -68,6 +68,6 @@ end
      def at_line?
         @line
      end     
-    
+
    end
  end
